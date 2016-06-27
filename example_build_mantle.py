@@ -80,9 +80,9 @@ class Earth(Planet):
         fraction_fe = 0.1                                # amount of FeSiO3
         fraction_al = 0.                                # amount of Al2O3
         fraction_mg = 1.0 - fraction_fe - fraction_al   # amount of MgSiO3
-        perovskite = minerals.SLB_2011.mg_fe_perovskite()
-        perovskite.set_composition([fraction_mg, fraction_fe, fraction_al])
-        self.lower_mantle = burnman.Composite([perovskite],[1.0])
+        bridgmanite = minerals.SLB_2011.mg_fe_bridgmanite()
+        bridgmanite.set_composition([fraction_mg, fraction_fe, fraction_al])
+        self.lower_mantle = burnman.Composite([bridgmanite],[1.0])
                              
         # We will ignore the core here and just use PREM values
         self.core = burnman.seismic.PREM()
