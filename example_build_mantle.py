@@ -109,8 +109,8 @@ earth.generate_profiles(n_iterations)
 # the total mass of the planet and
 # the moment of inertia factor,
 # or C/MR^2
-observed_mass = 5.95e24
-observed_moment = 0.33  # From Margot. et al, 2012
+observed_mass = 5.972e24
+observed_moment = 0.3307  # From Margot. et al, 2012
 
 print(("Total mass of the planet: %.2e, or %.0f%% of the observed mass" %
       (earth.mass, earth.mass / observed_mass * 100.)))
@@ -144,9 +144,18 @@ ax1.plot([earth.cmb / 1.e3, earth.cmb / 1.e3], ylimits, 'k', linewidth=3.)
 
 
 #Write mass and moment of intertia on plot
-ax1.text(100,4, "Total mass = %.2e, perc. of observed mass = %.0f%%" % (earth.mass, earth.mass / observed_mass * 100.))
-ax1.text(100,3, ("Moment of interia = %.3g, perc. of observed moment = %.0f%%" %
-         (earth.moment_of_inertia_factor, earth.moment_of_inertia_factor / observed_moment * 100.)))
+#ax1.text(100,4, "Total mass = %.2e, perc. of observed mass = %.0f%%" % (earth.mass, earth.mass / observed_mass * 100.))
+#ax1.text(100,3, ("Moment of interia = %.3g, perc. of observed moment = %.0f%%" %
+#         (earth.moment_of_inertia_factor, earth.moment_of_inertia_factor / observed_moment * 100.)))
+
+ax1.text(1200,5, 'Mass (kg)')
+ax1.text(2000,5, 'Moment of inertia factor')
+ax1.text(100,4, 'Your model')
+ax1.text(100,3, 'Observed+PREM')
+ax1.text(1200,4, '%.3e'% (earth.mass))
+ax1.text(2000,4, '%.4g' %(earth.moment_of_inertia_factor))
+ax1.text(1200,3, '%.3e'% (observed_mass))
+ax1.text(2000,3, '%.4g' %(observed_moment))
 
 ax1.legend()
 ax1.set_ylabel("Density (kg/m$^3$)")
