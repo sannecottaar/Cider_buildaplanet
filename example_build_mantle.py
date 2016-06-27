@@ -125,10 +125,6 @@ print(("Moment of inertia factor of the planet: %.3g, or %0.f%% of the observed 
 
 import matplotlib.gridspec as gridspec
 
-plt.rc('text', usetex=True)
-plt.rcParams['text.latex.preamble'] = r'\usepackage{relsize}'
-plt.rc('font', family='sans-serif')
-
 # Come up with axes for the final plot
 figure = plt.figure(figsize=(12, 10))
 ax1 = plt.subplot2grid((5, 3), (0, 0), colspan=3, rowspan=3)
