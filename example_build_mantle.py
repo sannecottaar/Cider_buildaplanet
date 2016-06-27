@@ -37,9 +37,7 @@ from __future__ import print_function
 
 import os
 import sys
-# hack to allow scripts to be placed in subdirectories next to burnman:
-if not os.path.exists('burnman') and os.path.exists('../burnman'):
-    sys.path.insert(1, os.path.abspath('burnman-0.9.0'))
+sys.path.insert(1, os.path.abspath('burnman-0.9.0'))
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -50,30 +48,74 @@ from scipy.interpolate import UnivariateSpline
 
 import burnman
 import burnman.minerals as minerals
-from build_planet import *
+from build_mantle import *
+
+
+
+
+class Earth(Planet):
+    
+    def __init__(self, n_slices):
+        # The constructor takes the number of depth slices which will
+        # be used for the calculation.  More slices will generate more
+        # accurate profiles, but it will take longer.
+        
+        self.cmb = 3481.e3              # Guess for the radius of the core-mantle-boundary
+        self.tz = 5701.e3               # Transition Zone boundary between upper and lower mantle
+        self.outer_radius = 6371.e3     # Outer radius of the planet
+        
+        self.radii = np.linspace(0.e3, self.outer_radius, n_slices)     # Radius list
+        self.pressures = np.linspace( 300.0e9, 0.0, n_slices)            # initial guess at pressure profile
+
+
+        
+        # Simple upper mantle with pure olivine
+        fraction_fe = 0.1                # amount of fayalite Fe2SiO4
+        fraction_mg = 1.0-fraction_fe   # amount of forsterite Mg2SiO4
+        olivine  = minerals.SLB_2011.mg_fe_olivine()
+        olivine.set_composition([fraction_mg,fraction_fe])
+        self.upper_mantle = burnman.Composite([olivine],[1.0])
+
+        # Simple lower mantle with pure perovskite
+        fraction_fe = 0.1                                # amount of FeSiO3
+        fraction_al = 0.                                # amount of Al2O3
+        fraction_mg = 1.0 - fraction_fe - fraction_al   # amount of MgSiO3
+        perovskite = minerals.SLB_2011.mg_fe_perovskite()
+        perovskite.set_composition([fraction_mg, fraction_fe, fraction_al])
+        self.lower_mantle = burnman.Composite([perovskite],[1.0])
+                             
+        # We will ignore the core here and just use PREM values
+        self.core = burnman.seismic.PREM()
+
+
+                                               
+
+# import PREM
+prem = burnman.seismic.PREM()
+depths = prem.internal_depth_list()
 
 
 # Here we actually do the interation.  We make an instance
-# of our Mercury planet, then call generate_profiles.
+# of our Earth planet, then call generate_profiles.
 # Emprically, 300 slices and 5 iterations seem to do
 # a good job of converging on the correct profiles.
 n_slices = 300
 n_iterations = 5
-merc = Mercury(n_slices)
-merc.generate_profiles(n_iterations)
+earth = Earth(n_slices)
+earth.generate_profiles(n_iterations)
 
 # These are the actual observables
 # from the model, that is to say,
 # the total mass of the planet and
 # the moment of inertia factor,
 # or C/MR^2
-observed_mass = 3.02e23
-observed_moment = 0.346  # From Margot. et al, 2012
+observed_mass = 5.95e24
+observed_moment = 0.33  # From Margot. et al, 2012
 
 print(("Total mass of the planet: %.2e, or %.0f%% of the observed mass" %
-      (merc.mass, merc.mass / observed_mass * 100.)))
+      (earth.mass, earth.mass / observed_mass * 100.)))
 print(("Moment of inertia factor of the planet: %.3g, or %0.f%% of the observed factor" %
-      (merc.moment_of_inertia_factor, merc.moment_of_inertia_factor / observed_moment * 100.)))
+      (earth.moment_of_inertia_factor, earth.moment_of_inertia_factor / observed_moment * 100.)))
 
 # As we can see by running this, the calculated mass of the planet is much too large.
 # One could do a better job of fitting this by using a more complicated interior model,
@@ -90,31 +132,29 @@ plt.rc('font', family='sans-serif')
 # Come up with axes for the final plot
 figure = plt.figure(figsize=(12, 10))
 ax1 = plt.subplot2grid((5, 3), (0, 0), colspan=3, rowspan=3)
-ax2 = plt.subplot2grid((5, 3), (3, 0), colspan=3, rowspan=1)
-ax3 = plt.subplot2grid((5, 3), (4, 0), colspan=3, rowspan=1)
+
+
+ax1.plot((6371.e3-depths)/1.e3, prem.density(depths)/1.e3, color = 'k', linestyle = '--', label='PREM')
 
 # Plot density, vphi, and vs for the planet.
-ax1.plot(merc.radii / 1.e3, merc.densities /
-         1.e3, label=r'$\rho$', linewidth=2.)
-ax1.plot(merc.radii / 1.e3, merc.bulk_sound_speed /
-         1.e3, label=r'$V_\phi$', linewidth=2.)
-ax1.plot(merc.radii / 1.e3, merc.shear_velocity /
-         1.e3, label=r'$V_S$', linewidth=2.)
+ax1.plot(earth.radii / 1.e3, earth.densities /
+         1.e3, label=r'$\rho$', linewidth=2., color = 'r')
+
+
 
 # Also plot a black line for the CMB
-ylimits = [3., 10.]
-ax1.plot([merc.cmb / 1.e3, merc.cmb / 1.e3], ylimits, 'k', linewidth=6.)
+ylimits = [3., 13.]
+ax1.plot([earth.cmb / 1.e3, earth.cmb / 1.e3], ylimits, 'k', linewidth=3.)
+
+
+#Write mass and moment of intertia on plot
+ax1.text(100,4, "Total mass = %.2e, perc. of observed mass = %.0f%%" % (earth.mass, earth.mass / observed_mass * 100.))
+ax1.text(100,3, ("Moment of interia = %.3g, perc. of observed moment = %.0f%%" %
+         (earth.moment_of_inertia_factor, earth.moment_of_inertia_factor / observed_moment * 100.)))
 
 ax1.legend()
-ax1.set_ylabel("Velocities (km/s) and Density (kg/m$^3$)")
+ax1.set_ylabel("Density (kg/m$^3$)")
+ax1.set_xlabel("Radius (km)")
 
-# Make a subplot showing the calculated pressure profile
-ax2.plot(merc.radii / 1.e3, merc.pressures / 1.e9, 'k', linewidth=2.)
-ax2.set_ylabel("Pressure (GPa)")
-
-# Make a subplot showing the calculated gravity profile
-ax3.plot(merc.radii / 1.e3, merc.gravity, 'k', linewidth=2.)
-ax3.set_ylabel("Gravity (m/s$^2)$")
-ax3.set_xlabel("Radius (km)")
 
 plt.show()

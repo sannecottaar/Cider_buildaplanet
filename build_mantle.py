@@ -37,9 +37,7 @@ from __future__ import print_function
 
 import os
 import sys
-# hack to allow scripts to be placed in subdirectories next to burnman:
-if not os.path.exists('burnman') and os.path.exists('../burnman'):
-    sys.path.insert(1, os.path.abspath('burnman-0.9.0'))
+sys.path.insert(1, os.path.abspath('burnman-0.9.0'))
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -78,6 +76,37 @@ class iron(burnman.Mineral):
         }
         burnman.Mineral.__init__(self)
 
+
+table_anderson = burnman.tools.read_table("input_geotherm/anderson_82.txt")
+table_anderson_depth = np.array(table_anderson)[:, 0]
+table_anderson_temperature = np.array(table_anderson)[:, 1]
+prem = burnman.seismic.PREM()
+def anderson(pressure):
+    """
+    Geotherm from :cite:`anderson1982earth`.
+
+    Parameters
+    ----------
+    pressure : list of floats
+        The list of pressures at which to evaluate the geotherm. :math:`[Pa]`
+
+    Returns
+    -------
+    temperature : list of floats
+        The list of temperatures for each of the pressures. :math:`[K]`
+    """
+    temperature = np.empty_like(pressure)
+    for i in range(len(pressure)):
+        try:
+            depth = prem.depth(pressure[i])
+        except:
+            depth = 6371.e3 # in case pressure are higher than the center of the earth. This can occur during the iterations
+        temperature[i] = burnman.tools.lookup_and_interpolate(
+            table_anderson_depth, table_anderson_temperature, depth)
+    return temperature
+
+
+
 # Create a class for Planet that will do the heavy lifting.
 class Planet(object):
 
@@ -96,8 +125,8 @@ class Planet(object):
         self.temperatures = np.ones_like(
             self.pressures) * 1000.  # Assume an isothermal interior (not a great assumption, but we do this for simplicity's sake).
 
-        self.mantle = None
-       
+        self.upper_mantle = None
+        self.lower_mantle = None
         self.core = None
 
     def generate_profiles(self, n_iterations):
@@ -107,6 +136,9 @@ class Planet(object):
         # this also calculates mass and moment of inertia of the planet.
 
         for i in range(n_iterations):
+            print(self.pressures)
+            self.temperatures = anderson(self.pressures ) # Computing adiabat just for upper mantle composition. This is a simplification, but speeds up the run.
+            print(self.temperatures)
             self.densities, self.bulk_sound_speed, self.shear_velocity = self._evaluate_eos(
                 self.pressures, self.temperatures, self.radii)
             self.gravity = self._compute_gravity(
@@ -128,16 +160,22 @@ class Planet(object):
         bulk_sound_speed = np.empty_like(radii)
         shear_velocity = np.empty_like(radii)
 
+
+
         for i in range(len(radii)):
             density = vs = vphi = 0.
-
             if radii[i] > self.cmb:
-                density, vs, vphi = self.mantle.evaluate(
-                    ['density', 'v_s', 'v_phi'], [pressures[i]], [temperatures[i]])
+                
+                if radii[i] > self.tz:
+                    density, vs, vphi = self.upper_mantle.evaluate(
+                                                 ['density', 'v_s', 'v_phi'], [pressures[i]], [temperatures[i]])
+                else:
+                    density, vs, vphi = self.lower_mantle.evaluate(
+                                                ['density', 'v_s', 'v_phi'], [pressures[i]], [temperatures[i]])
             else:
-                density, vs, vphi = self.core.evaluate(
-                    ['density', 'v_s', 'v_phi'], [pressures[i]], [temperatures[i]])
-
+                density = self.core.density(6371.e3-radii[i]) # taken from PREM
+                vphi = self.core.v_phi(6371.e3-radii[i]) # taken from PREM
+                vs = self.core.v_s(6371.e3-radii[i]) # taken from PREM
             rho[i] = density
             bulk_sound_speed[i] = vphi
             shear_velocity[i] = vs
@@ -194,53 +232,3 @@ class Planet(object):
         return moment
 
 
-class Mercury(Planet):
-    
-    def __init__(self, n_slices):
-        # The constructor takes the number of depth slices which will
-        # be used for the calculation.  More slices will generate more
-        # accurate profiles, but it will take longer.
-        
-        self.cmb = 2020.e3  # Guess for the radius of the core-mantle-boundary
-        self.outer_radius = 2440.e3  # Outer radius of the planet
-        
-        self.radii = np.linspace(0.e3, self.outer_radius, n_slices)  # Radius list
-        self.pressures = np.linspace(35.0e9, 0.0, n_slices)  # initial guess at pressure profile
-        self.temperatures = np.ones_like(self.pressures) * 1000.  # Assume an isothermal interior (not a great assumption, but we do this for simplicity's sake).
-                    
-        # The planet will be represented by a two layer model, mantle and core.
-        # The top layer will be a composite of 80% perovskite and 20%
-        # periclase.
-        amount_olivine = 0.8
-        self.mantle = burnman.Composite([minerals.SLB_2011.forsterite(),
-                                             minerals.SLB_2011.enstatite()],
-                                            [amount_olivine, 1.0 - amount_olivine])
-        # The core will be represented by solid iron.
-        self.core = iron()
-
-
-
-class Earth(Planet):
-    
-    def __init__(self, n_slices):
-        # The constructor takes the number of depth slices which will
-        # be used for the calculation.  More slices will generate more
-        # accurate profiles, but it will take longer.
-        
-        self.cmb = 3000.e3  # Guess for the radius of the core-mantle-boundary
-        self.outer_radius = 6371.e3  # Outer radius of the planet
-        
-        self.radii = np.linspace(0.e3, self.outer_radius, n_slices)  # Radius list
-        self.pressures = np.linspace( 35.0e9, 0.0, n_slices)  # initial guess at pressure profile
-        self.temperatures = np.ones_like(self.pressures) * 1000.  # Assume an isothermal interior (not a great assumption, but we do this for simplicity's sake).
-         
-        # The planet will be represented by a two layer model, mantle and core.
-        # The top layer will be a composite of 80% perovskite and 20%
-        # periclase.
-        amount_olivine = 0.8
-        self.mantle = burnman.Composite([minerals.SLB_2011.forsterite(),
-                                          minerals.SLB_2011.enstatite()],
-                                         [amount_olivine, 1.0 - amount_olivine])
-        # The core will be represented by solid iron.
-        self.core = iron()
-    
