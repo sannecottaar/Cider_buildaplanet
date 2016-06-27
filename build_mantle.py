@@ -136,9 +136,7 @@ class Planet(object):
         # this also calculates mass and moment of inertia of the planet.
 
         for i in range(n_iterations):
-            print(self.pressures)
             self.temperatures = anderson(self.pressures ) # Computing adiabat just for upper mantle composition. This is a simplification, but speeds up the run.
-            print(self.temperatures)
             self.densities, self.bulk_sound_speed, self.shear_velocity = self._evaluate_eos(
                 self.pressures, self.temperatures, self.radii)
             self.gravity = self._compute_gravity(
