@@ -70,14 +70,14 @@ class Earth(Planet):
 
         
         # Simple upper mantle with pure olivine
-        fraction_fe = 0.1                # amount of fayalite Fe2SiO4
+        fraction_fe = 0.                # amount of fayalite Fe2SiO4
         fraction_mg = 1.0-fraction_fe   # amount of forsterite Mg2SiO4
         olivine  = minerals.SLB_2011.mg_fe_olivine()
         olivine.set_composition([fraction_mg,fraction_fe])
         self.upper_mantle = burnman.Composite([olivine],[1.0])
 
         # Simple lower mantle with pure perovskite
-        fraction_fe = 0.1                                # amount of FeSiO3
+        fraction_fe = 0.                                # amount of FeSiO3
         fraction_al = 0.                                # amount of Al2O3
         fraction_mg = 1.0 - fraction_fe - fraction_al   # amount of MgSiO3
         bridgmanite = minerals.SLB_2011.mg_fe_bridgmanite()
