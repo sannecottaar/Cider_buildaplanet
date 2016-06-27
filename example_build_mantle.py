@@ -70,7 +70,7 @@ class Earth(Planet):
 
         
         # Simple upper mantle with pure olivine
-        fraction_fe = 0.                # amount of fayalite Fe2SiO4
+        fraction_fe = 0.               # amount of fayalite Fe2SiO4
         fraction_mg = 1.0-fraction_fe   # amount of forsterite Mg2SiO4
         olivine  = minerals.SLB_2011.mg_fe_olivine()
         olivine.set_composition([fraction_mg,fraction_fe])
@@ -112,9 +112,9 @@ earth.generate_profiles(n_iterations)
 observed_mass = 5.972e24
 observed_moment = 0.3307  # From Margot. et al, 2012
 
-print(("Total mass of the planet: %.2e, or %.0f%% of the observed mass" %
+print(("Total mass of the planet: %.2e, or %.1f%% of the observed mass" %
       (earth.mass, earth.mass / observed_mass * 100.)))
-print(("Moment of inertia factor of the planet: %.3g, or %0.f%% of the observed factor" %
+print(("Moment of inertia factor of the planet: %.3g, or %0.1f%% of the observed factor" %
       (earth.moment_of_inertia_factor, earth.moment_of_inertia_factor / observed_moment * 100.)))
 
 # As we can see by running this, the calculated mass of the planet is much too large.
