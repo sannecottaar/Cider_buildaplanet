@@ -49,7 +49,7 @@ from scipy.interpolate import UnivariateSpline
 import burnman
 import burnman.minerals as minerals
 from build_mantle import *
-
+import matplotlib.gridspec as gridspec
 
 
 
@@ -68,16 +68,19 @@ class Earth(Planet):
         self.pressures = np.linspace( 300.0e9, 0.0, n_slices)            # initial guess at pressure profile
 
 
+        '''
+        Vary composition here!
+        '''
         
         # Simple upper mantle with pure olivine
-        fraction_fe = 0.               # amount of fayalite Fe2SiO4
+        fraction_fe = 0.12               # amount of fayalite Fe2SiO4
         fraction_mg = 1.0-fraction_fe   # amount of forsterite Mg2SiO4
         olivine  = minerals.SLB_2011.mg_fe_olivine()
         olivine.set_composition([fraction_mg,fraction_fe])
         self.upper_mantle = burnman.Composite([olivine],[1.0])
 
         # Simple lower mantle with pure perovskite
-        fraction_fe = 0.                                # amount of FeSiO3
+        fraction_fe = 0.12                               # amount of FeSiO3
         fraction_al = 0.                                # amount of Al2O3
         fraction_mg = 1.0 - fraction_fe - fraction_al   # amount of MgSiO3
         bridgmanite = minerals.SLB_2011.mg_fe_bridgmanite()
@@ -117,15 +120,10 @@ print(("Total mass of the planet: %.2e, or %.1f%% of the observed mass" %
 print(("Moment of inertia factor of the planet: %.3g, or %0.1f%% of the observed factor" %
       (earth.moment_of_inertia_factor, earth.moment_of_inertia_factor / observed_moment * 100.)))
 
-# As we can see by running this, the calculated mass of the planet is much too large.
-# One could do a better job of fitting this by using a more complicated interior model,
-# with a liquid outer core, light alloying elements in the core, and a more realistic
-# temperature profile.  That, however, is outside of the scope of this
-# example.
 
-import matplotlib.gridspec as gridspec
 
-# Come up with axes for the final plot
+
+# Come up with axes for the final plot. You can add axes here to plot velocities or pressures.
 figure = plt.figure(figsize=(12, 10))
 ax1 = plt.subplot2grid((5, 3), (0, 0), colspan=3, rowspan=3)
 
@@ -144,10 +142,6 @@ ax1.plot([earth.cmb / 1.e3, earth.cmb / 1.e3], ylimits, 'k', linewidth=3.)
 
 
 #Write mass and moment of intertia on plot
-#ax1.text(100,4, "Total mass = %.2e, perc. of observed mass = %.0f%%" % (earth.mass, earth.mass / observed_mass * 100.))
-#ax1.text(100,3, ("Moment of interia = %.3g, perc. of observed moment = %.0f%%" %
-#         (earth.moment_of_inertia_factor, earth.moment_of_inertia_factor / observed_moment * 100.)))
-
 ax1.text(1200,5, 'Mass (kg)')
 ax1.text(2000,5, 'Moment of inertia factor')
 ax1.text(100,4, 'Your model')

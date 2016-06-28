@@ -53,30 +53,8 @@ import burnman.minerals as minerals
 # gravitational constant
 G = 6.67e-11
 
-# A basic set of EoS parameters for solid iron
-class iron(burnman.Mineral):
 
-    def __init__(self):
-        # Parameters for gamma - Fe are from Tsujino et al. 2013
-        # G_0 G_Prime0 from Mao et al. 2001 (fig. 3)
-        self.params = {
-            'equation_of_state': 'slb3',
-            'T_0': 1273.,
-            'V_0': 7.381e-06,
-            'K_0': 111.5e9,
-            'Kprime_0': 5.2,
-            'G_0': 83.2e9,  # Shear modulus and derivative from Gleason and Mao, 2013
-            'Gprime_0': 2.04,
-            'molar_mass': 55.845 / 1000.,
-            'n': 1,
-            'Debye_0': 340.,
-            'grueneisen_0': 2.28,
-            'q_0': 0.21,
-            'eta_s_0': 2.0  # Wholly invented value
-        }
-        burnman.Mineral.__init__(self)
-
-
+## For temperature the Anderson geotherm is used. There are different option in BurnMan, but this is a entire Earth one. Try to add a temperature anomaly, and look at the effect. 
 table_anderson = burnman.tools.read_table("input_geotherm/anderson_82.txt")
 table_anderson_depth = np.array(table_anderson)[:, 0]
 table_anderson_temperature = np.array(table_anderson)[:, 1]
@@ -136,7 +114,7 @@ class Planet(object):
         # this also calculates mass and moment of inertia of the planet.
 
         for i in range(n_iterations):
-            self.temperatures = anderson(self.pressures ) # Computing adiabat just for upper mantle composition. This is a simplification, but speeds up the run.
+            self.temperatures = anderson(self.pressures )
             self.densities, self.bulk_sound_speed, self.shear_velocity = self._evaluate_eos(
                 self.pressures, self.temperatures, self.radii)
             self.gravity = self._compute_gravity(
